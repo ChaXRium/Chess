@@ -1,0 +1,159 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Two Player Chess Game</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      text-align: center;
+      background-color: #f5f5f5;
+    }
+    #chessboard {
+      display: grid;
+      grid-template-columns: repeat(8, 60px);
+      grid-template-rows: repeat(8, 60px);
+      width: 480px;
+      margin: 20px auto;
+      border: 2px solid #333;
+    }
+    .square {
+      width: 60px;
+      height: 60px;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      font-size: 32px;
+      font-weight: bold;
+      user-select: none;
+    }
+    .white { background-color: #f0d9b5; }
+    .black { background-color: #b58863; }
+  </style>
+</head>
+<body>
+  <h1>Two Player Chess Game</h1>
+  <div id="chessboard"></div>
+  <script>
+    const board = document.getElementById("chessboard");
+
+    const initialBoard = [
+      ["♜", "♞", "♝", "♛", "♚", "♝", "♞", "♜"],
+      ["♟︎", "♟︎", "♟︎", "♟︎", "♟︎", "♟︎", "♟︎", "♟︎"],
+      ["", "", "", "", "", "", "", ""],
+      ["", "", "", "", "", "", "", ""],
+      ["", "", "", "", "", "", "", ""],
+      ["", "", "", "", "", "", "", ""],
+      ["♙", "♙", "♙", "♙", "♙", "♙", "♙", "♙"],
+      ["♖", "♘", "♗", "♕", "♔", "♗", "♘", "♖"]
+    ];
+
+    let selectedSquare = null;
+    let currentPlayer = "white";
+
+    function drawBoard() {
+      board.innerHTML = "";
+      for (let row = 0; row < 8; row++) {
+        for (let col = 0; col < 8; col++) {
+          const square = document.createElement("div");
+          square.classList.add("square", (row + col) % 2 === 0 ? "white" : "black");
+          square.dataset.row = row;
+          square.dataset.col = col;
+
+          const piece = initialBoard[row][col];
+          if (piece) square.textContent = piece;
+
+          square.addEventListener("click", handleSquareClick);
+          board.appendChild(square);
+        }
+      }
+    }
+
+    function handleSquareClick(e) {
+      const row = parseInt(e.target.dataset.row);
+      const col = parseInt(e.target.dataset.col);
+
+      if (!selectedSquare) {
+        const piece = initialBoard[row][col];
+        if (piece && isCurrentPlayerPiece(piece)) {
+          selectedSquare = { row, col };
+          e.target.style.border = "2px solid red";
+        }
+      } else {
+        const from = selectedSquare;
+        const to = { row, col };
+
+        const moved = tryMove(from, to);
+        if (moved) currentPlayer = currentPlayer === "white" ? "black" : "white";
+
+        selectedSquare = null;
+        drawBoard();
+      }
+    }
+
+    function isCurrentPlayerPiece(piece) {
+      return currentPlayer === "white"
+        ? "♙♖♘♗♕♔".includes(piece)
+        : "♟︎♜♞♝♛♚".includes(piece);
+    }
+
+    function tryMove(from, to) {
+      const piece = initialBoard[from.row][from.col];
+      const target = initialBoard[to.row][to.col];
+      if (target && isCurrentPlayerPiece(target)) return false;
+
+      const dRow = to.row - from.row;
+      const dCol = to.col - from.col;
+
+      // Pawn
+      if (piece === "♙") {
+        if (from.col === to.col && target === "" && (dRow === -1 || (from.row === 6 && dRow === -2 && initialBoard[5][to.col] === ""))) return move(from, to);
+        if (Math.abs(dCol) === 1 && dRow === -1 && target && !isCurrentPlayerPiece(target)) return move(from, to);
+      }
+      if (piece === "♟︎") {
+        if (from.col === to.col && target === "" && (dRow === 1 || (from.row === 1 && dRow === 2 && initialBoard[2][to.col] === ""))) return move(from, to);
+        if (Math.abs(dCol) === 1 && dRow === 1 && target && !isCurrentPlayerPiece(target)) return move(from, to);
+      }
+
+      // Rook
+      if ("♖♜".includes(piece) && (dRow === 0 || dCol === 0) && isPathClear(from, to)) return move(from, to);
+
+      // Bishop
+      if ("♗♝".includes(piece) && Math.abs(dRow) === Math.abs(dCol) && isPathClear(from, to)) return move(from, to);
+
+      // Knight
+      if ("♘♞".includes(piece) && ((Math.abs(dRow) === 2 && Math.abs(dCol) === 1) || (Math.abs(dRow) === 1 && Math.abs(dCol) === 2))) return move(from, to);
+
+      // Queen
+      if ("♕♛".includes(piece) && (dRow === 0 || dCol === 0 || Math.abs(dRow) === Math.abs(dCol)) && isPathClear(from, to)) return move(from, to);
+
+      // King
+      if ("♔♚".includes(piece) && Math.abs(dRow) <= 1 && Math.abs(dCol) <= 1) return move(from, to);
+
+      return false;
+    }
+
+    function isPathClear(from, to) {
+      const dRow = Math.sign(to.row - from.row);
+      const dCol = Math.sign(to.col - from.col);
+      let r = from.row + dRow;
+      let c = from.col + dCol;
+      while (r !== to.row || c !== to.col) {
+        if (initialBoard[r][c] !== "") return false;
+        r += dRow;
+        c += dCol;
+      }
+      return true;
+    }
+
+    function move(from, to) {
+      initialBoard[to.row][to.col] = initialBoard[from.row][from.col];
+      initialBoard[from.row][from.col] = "";
+      return true;
+    }
+
+    drawBoard();
+  </script>
+</body>
+</html>
